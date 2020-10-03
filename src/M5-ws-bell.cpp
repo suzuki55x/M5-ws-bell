@@ -151,11 +151,9 @@ void loop() {
     String isPressedBtnAStr = (isPressedBtnA ? "true": "false");
     String isPressedBtnBStr = (isPressedBtnB ? "true": "false");
     String isPressedBtnCStr = (isPressedBtnC ? "true": "false");
-    String btn_str = "{\"red\":" + isPressedBtnAStr +
-      ", \"green\":" + isPressedBtnBStr +
-      ", \"blue\":" + isPressedBtnCStr + "}";
+    String ws_str = "{\"topic\":\"room:lobby\",\"ref\":1, \"payload\":{\"body\":\"test: [" + (String)time +"]\"},\"event\":\"call\"}";
     //Serial.println(btn_str);
-//    webSocket.sendTXT(btn_str);
+    webSocket.sendTXT(ws_str);
   }
   webSocket.loop();
 
