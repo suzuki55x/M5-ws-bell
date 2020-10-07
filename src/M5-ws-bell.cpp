@@ -1,4 +1,6 @@
 //#define ARDUINOJSON_ENABLE_ARDUINO_STRING 1
+#define BEAT 300
+#define SPEAKER_PIN 25
 
 #include <M5Stack.h>
 #include <ArduinoJson.h>
@@ -57,25 +59,33 @@ void wifiInit() {
   M5.Lcd.setTextSize(2);
 }
 
-String parseReceivedJson(uint8_t *payload)
-{
-  char *json = (char *)payload;
-  DeserializationError error = deserializeJson(doc, json);
-
-  if (error) {
-    return "none";
+void beep(int freq, int duration, uint8_t volume) {
+  // freq(Hz), duration(ms), volume(1~255)
+  int t = 1000000 / freq / 2;
+  unsigned long start = millis();
+  while ((millis() -start) < duration) {
+    dacWrite(SPEAKER_PIN, 0);
+    delayMicroseconds(t);
+    dacWrite(SPEAKER_PIN, volume);
+    delayMicroseconds(t);
   }
+  dacWrite(SPEAKER_PIN, 0);
+}
 
-  //JsonObject obj = doc.as<JsonObject>();// ArduinoJsonnのバグ？
-  String topic = doc["payload"]["body"]["msg"].as<String>();// FIXME: 暫定で決め打ち。Objectで管理したい
-
-  //return obj[String("topic")];
-  return topic;
+// ピンポン(ボタン押した時)
+void chimeA() {
+  beep(659, 500, 10);
+  beep(523, 1000, 10);
+  delay(400);
+  beep(659, 500, 10);
+  beep(523, 1000, 10);
 }
 
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   //M5.Lcd.print("event");
   M5.Lcd.setCursor(0, 20);
+  char *json = (char *)payload;
+  deserializeJson(doc, json);
 
   switch(type) {
     case WStype_DISCONNECTED:
@@ -91,7 +101,9 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     case WStype_TEXT:
       M5.Lcd.fillScreen(BLACK);
       //Serial.printf("[WSc] get text: %s\n", payload);
-      M5.Lcd.printf("message: %s\n", parseReceivedJson(payload).c_str());
+      M5.Lcd.printf("message: %s\n", doc["payload"]["body"]["msg"].as<String>().c_str());
+      M5.Lcd.printf("event: %s\n", doc["event"].as<String>().c_str());
+      if(doc["event"].as<String>()=="call") chimeA();
       break;
     case WStype_BIN:
     case WStype_ERROR:
@@ -136,7 +148,7 @@ void loop() {
   bool isPressedBtnA = false;
   bool isPressedBtnB = false;
   bool isPressedBtnC = false;
-  if(M5.BtnA.wasPressed() || M5.BtnA.isPressed())
+  if(M5.BtnA.wasPressed()/* || M5.BtnA.isPressed()*/)
   {
     isPressedBtnA = true;
   }
@@ -155,6 +167,7 @@ void loop() {
     String ws_str = "{\"topic\":\"room:lobby\",\"ref\":\"1\", \"payload\":{\"body\":{\"msg\": \"[" + (String)time +"]\"}},\"event\":\"call\"}";
     //Serial.println(btn_str);
     webSocket.sendTXT(ws_str);
+    chimeA();
   }
   webSocket.loop();
 
