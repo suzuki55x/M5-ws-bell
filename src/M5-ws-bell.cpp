@@ -66,28 +66,30 @@ String parseReceivedJson(uint8_t *payload)
     return "none";
   }
 
-  //JsonObject obj = doc.as<JsonObject>();
-  String topic = doc["topic"].as<String>();
+  //JsonObject obj = doc.as<JsonObject>();// ArduinoJsonnのバグ？
+  String topic = doc["payload"]["body"]["msg"].as<String>();// FIXME: 暫定で決め打ち。Objectで管理したい
 
   //return obj[String("topic")];
   return topic;
 }
 
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
-  M5.Lcd.print("event");
+  //M5.Lcd.print("event");
+  M5.Lcd.setCursor(0, 20);
 
   switch(type) {
     case WStype_DISCONNECTED:
       //Serial.printf("[WSc] Disconnected!\n");
-      M5.Lcd.print("disconnected");
+      //M5.Lcd.print("disconnected");
       break;
     case WStype_CONNECTED:
       //Serial.printf("[WSc] Connected to url: %s\n", payload);
-      M5.Lcd.print("connected");
+      //M5.Lcd.print("connected");
       // {"topic":"room:lobby","ref":1, "payload":{},"event":"phx_join"}
-      webSocket.sendTXT("{\"topic\":\"room:lobby\",\"ref\":1, \"payload\":{},\"event\":\"phx_join\"}");
+      webSocket.sendTXT("{\"topic\":\"room:lobby\",\"ref\":\"1\", \"payload\":{},\"event\":\"phx_join\"}");
       break;
     case WStype_TEXT:
+      M5.Lcd.fillScreen(BLACK);
       //Serial.printf("[WSc] get text: %s\n", payload);
       M5.Lcd.printf("message: %s\n", parseReceivedJson(payload).c_str());
       break;
