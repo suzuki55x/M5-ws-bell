@@ -13,6 +13,7 @@ char pass[32];
 const char* ws_host = "192.168.10.5";
 const int   ws_port = 4000;
 const char* ws_path = "/socket/websocket";
+const char* image1 = "/disp.jpg";
 
 WebSocketsClient webSocket;
 DynamicJsonDocument doc(1024);
@@ -142,6 +143,8 @@ void setup() {
   initWebSocket();
   // 画面クリア
   M5.Lcd.fillScreen(BLACK);
+
+  M5.Lcd.drawJpgFile(SD, image1);
 }
 
 void loop() { 
