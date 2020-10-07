@@ -1,3 +1,5 @@
+//#define ARDUINOJSON_ENABLE_ARDUINO_STRING 1
+
 #include <M5Stack.h>
 #include <ArduinoJson.h>
 #include "WebSocketsClient.h"
@@ -55,21 +57,21 @@ void wifiInit() {
   M5.Lcd.setTextSize(2);
 }
 
-//std::string parseReceivedJson(uint8_t *payload)
-//{
-//  char *json = (char *)payload;
-//  DeserializationError error = deserializeJson(doc, json);
-//
-//  if (error) {
-//    return "none";
-//  }
-//
-//  JsonObject obj = doc.as<JsonObject>();
-//
-//  // You can use a String to get an element of a JsonObject
-//  // No duplication is done.
-//  return obj[String("topic")];
-//}
+String parseReceivedJson(uint8_t *payload)
+{
+  char *json = (char *)payload;
+  DeserializationError error = deserializeJson(doc, json);
+
+  if (error) {
+    return "none";
+  }
+
+  //JsonObject obj = doc.as<JsonObject>();
+  String topic = doc["topic"].as<String>();
+
+  //return obj[String("topic")];
+  return topic;
+}
 
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   M5.Lcd.print("event");
@@ -87,7 +89,7 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       break;
     case WStype_TEXT:
       //Serial.printf("[WSc] get text: %s\n", payload);
-      //M5.Lcd.printf("message: %s\n", (char*)parseReceivedJson(payload));
+      M5.Lcd.printf("message: %s\n", parseReceivedJson(payload).c_str());
       break;
     case WStype_BIN:
     case WStype_ERROR:
@@ -146,12 +148,9 @@ void loop() {
   }
   static uint32_t pre_send_time = 0;
   uint32_t time = millis();
-  if(time - pre_send_time > 100){
+  if(isPressedBtnA && time - pre_send_time > 100){
     pre_send_time = time;
-    String isPressedBtnAStr = (isPressedBtnA ? "true": "false");
-    String isPressedBtnBStr = (isPressedBtnB ? "true": "false");
-    String isPressedBtnCStr = (isPressedBtnC ? "true": "false");
-    String ws_str = "{\"topic\":\"room:lobby\",\"ref\":1, \"payload\":{\"body\":\"test: [" + (String)time +"]\"},\"event\":\"call\"}";
+    String ws_str = "{\"topic\":\"room:lobby\",\"ref\":\"1\", \"payload\":{\"body\":{\"msg\": \"[" + (String)time +"]\"}},\"event\":\"call\"}";
     //Serial.println(btn_str);
     webSocket.sendTXT(ws_str);
   }
