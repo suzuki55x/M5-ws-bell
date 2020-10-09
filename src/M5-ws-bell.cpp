@@ -1,3 +1,5 @@
+// MEMO:  SDに固有名(設置場所とか)書いておいてもいいかも。
+
 //#define ARDUINOJSON_ENABLE_ARDUINO_STRING 1
 #define BEAT 300
 #define SPEAKER_PIN 25
@@ -10,7 +12,8 @@
 const char* wifi_fname = "/wifi.csv";
 char ssid[32];
 char pass[32];
-const char* ws_host = "192.168.10.5";
+const char* ws_host = "192.168.1.3";
+//const char* ws_host = "192.168.10.5";
 const int   ws_port = 4000;
 const char* ws_path = "/socket/websocket";
 const char* image1 = "/disp.jpg";
@@ -74,12 +77,18 @@ void beep(int freq, int duration, uint8_t volume) {
 }
 
 // ピンポン(ボタン押した時)
-void chimeA() {
-  beep(659, 500, 10);
-  beep(523, 1000, 10);
-  delay(400);
-  beep(659, 500, 10);
-  beep(523, 1000, 10);
+void chimeA(String type="other") {
+  if (type=="use") {
+    beep(659, 500, 10);
+  } else if (type=="mtg") {
+    beep(523, 1000, 10);
+  } else {
+    beep(659, 500, 10);
+    beep(523, 1000, 10);
+    delay(400);
+    beep(659, 500, 10);
+    beep(523, 1000, 10);
+  }
 }
 
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
@@ -100,11 +109,11 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       webSocket.sendTXT("{\"topic\":\"room:lobby\",\"ref\":\"1\", \"payload\":{},\"event\":\"phx_join\"}");
       break;
     case WStype_TEXT:
-      M5.Lcd.fillScreen(BLACK);
+      //M5.Lcd.fillScreen(BLACK);
       //Serial.printf("[WSc] get text: %s\n", payload);
-      M5.Lcd.printf("message: %s\n", doc["payload"]["body"]["msg"].as<String>().c_str());
-      M5.Lcd.printf("event: %s\n", doc["event"].as<String>().c_str());
-      if(doc["event"].as<String>()=="call") chimeA();
+      //M5.Lcd.printf("message: %s\n", doc["payload"]["body"]["msg"].as<String>().c_str());
+      //M5.Lcd.printf("event: %s\n", doc["event"].as<String>().c_str());
+      if(doc["event"].as<String>()=="call") chimeA(doc["payload"]["body"]["type"].as<String>());
       break;
     case WStype_BIN:
     case WStype_ERROR:
@@ -148,29 +157,37 @@ void setup() {
 }
 
 void loop() { 
+  bool isPressedBtn  = false;
   bool isPressedBtnA = false;
   bool isPressedBtnB = false;
   bool isPressedBtnC = false;
-  if(M5.BtnA.wasPressed()/* || M5.BtnA.isPressed()*/)
+  char* type = "";
+  if(M5.BtnA.wasPressed())
   {
+    isPressedBtn  = true;
     isPressedBtnA = true;
+    type = "use";
   }
-  if(M5.BtnB.wasPressed() || M5.BtnB.isPressed())
+  if(M5.BtnB.wasPressed())
   {
+    isPressedBtn  = true;
     isPressedBtnB = true;
+    type = "mtg";
   }
-  if(M5.BtnC.wasPressed() || M5.BtnC.isPressed())
+  if(M5.BtnC.wasPressed())
   {
+    isPressedBtn  = true;
     isPressedBtnC = true;
+    type = "other";
   }
   static uint32_t pre_send_time = 0;
   uint32_t time = millis();
-  if(isPressedBtnA && time - pre_send_time > 100){
+  if(isPressedBtn && time - pre_send_time > 100){
     pre_send_time = time;
-    String ws_str = "{\"topic\":\"room:lobby\",\"ref\":\"1\", \"payload\":{\"body\":{\"msg\": \"[" + (String)time +"]\"}},\"event\":\"call\"}";
+    String ws_str = R"({"topic":"room:lobby", "ref":1, "payload":{"body":{"type":")"+ (String)type +R"(", "msg":"time:[)" + (String)time + R"(]"}},"event":"call"})";
     //Serial.println(btn_str);
     webSocket.sendTXT(ws_str);
-    chimeA();
+    // chimeA();
   }
   webSocket.loop();
 
