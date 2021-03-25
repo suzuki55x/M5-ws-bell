@@ -12,7 +12,7 @@
 const char* wifi_fname = "/wifi.csv";
 char ssid[32];
 char pass[32];
-const char* ws_host = "192.168.1.3";
+const char* ws_host = "192.168.1.10";
 //const char* ws_host = "192.168.10.5";
 const int   ws_port = 4000;
 const char* ws_path = "/socket/websocket";
